@@ -2,6 +2,7 @@
 - 🌱 I’m currently learning how to make a better hub
 - currently this hub is under testing, it might have a few bug that need to fix
 Fun fact: this was made by an AI that created specifically for lua language
+Here the string: loadstring(game:HttpGet(("https://raw.githubusercontent.com/andy-gui/andy-gui/refs/heads/main/script"), true))()
 Have fun!
 
 <!---
