@@ -14,9 +14,7 @@ Theme: Hacker (Green Text, Black Background)
 -- // Services //
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local UserInputService = game:GetService("UserInputService")
+local UserInputService = game:GetService("User InputService")
 local RunService = game:GetService("RunService")
 
 -- // Configuration //
@@ -30,7 +28,14 @@ local settings = {
 }
 
 -- // UI Creation //
-local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))() -- Using Kavo UI Library for simplicity, replace if needed.
+local success, library = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+end)
+
+if not success then
+    warn("Failed to load UI library: " .. tostring(library))
+    return
+end
 
 local window = library.New({
     Name = "Blox Fruits Hacker",
@@ -48,7 +53,6 @@ window:SetTheme({
     InputFieldColor = Color3.fromRGB(30, 30, 30),
     DropdownColor = Color3.fromRGB(30, 30, 30),
 })
-
 
 -- // Tabs //
 local mainTab = window:NewTab({Name = "Main"})
@@ -124,7 +128,6 @@ fruitEspSection:NewToggle({
     end
 })
 
-
 -- // Bonus Tab //
 local noCooldownSection = bonusTab:NewSection("No Cooldown")
 
@@ -136,7 +139,6 @@ noCooldownSection:NewToggle({
         settings.noCooldownEnabled = state
     end
 })
-
 
 -- // Auto Click Function //
 local function autoClick()
@@ -154,7 +156,7 @@ local function createFruitESP(fruit)
         local highlight = Instance.new("Highlight")
         highlight.Parent = fruit
         highlight.FillColor = Color3.fromRGB(0, 255, 0)
-        highlight.OutlineColor = Color3.fromRGB(0, 0, 0)
+        highlight.OutlineColor = Color3.fromRGB(225, 255, 0)
         highlight.Name = "Highlight"
         fruitBoxes[fruit] = highlight
     end
@@ -172,7 +174,7 @@ end
 local function updateFruitESP()
     clearFruitESP() -- Clear existing boxes
     if settings.fruitEspEnabled then
-        for i, v in pairs(game.Workspace:GetDescendants()) do
+        for _, v in pairs(game.Workspace:GetDescendants()) do
             if v:IsA("Model") and string.find(v.Name, "Fruit") then
                 createFruitESP(v)
             end
@@ -184,19 +186,17 @@ end
 RunService.Stepped:Connect(function()
     -- Auto Click
     if settings.autoClickEnabled then
-        if RunService.Heartbeat:Wait() <= (1 / settings.autoClickSpeed) then
-           autoClick()
-        end
+        autoClick()
     end
 
     -- Update Fruit ESP (Run every few seconds to avoid lag)
-    if settings.fruitEspEnabled and RunService.Heartbeat:Wait() <= 5 then
+    if settings.fruitEspEnabled then
         updateFruitESP()
     end
 
     -- No Cooldown (Basic Implementation - Adjust as needed for specific abilities)
     if settings.noCooldownEnabled then
-        for i, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
+        for _, tool in pairs(LocalPlayer.Backpack:GetChildren()) do
             if tool:IsA("Tool") and tool:FindFirstChild("Cooldown") then
                 tool.Cooldown.Value = 0
             end
