@@ -1,0 +1,404 @@
+local CustomUI = {}
+
+local tweenService = game:GetService("TweenService")
+local userInputService = game:GetService("User InputService")
+local runService = game:GetService("RunService")
+
+local Utility = {}
+local Objects = {}
+
+function CustomUI:DraggingEnabled(frame, parent)
+    parent = parent or frame
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = parent.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    userInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            parent.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+function Utility:TweenObject(obj, properties, duration, ...)
+    tweenService:Create(obj, TweenInfo.new(duration, ...), properties):Play()
+end
+
+local themes = {
+    SchemeColor = Color3.fromRGB(74, 99, 135),
+    Background = Color3.fromRGB(36, 37, 43),
+    Header = Color3.fromRGB(28, 29, 34),
+    TextColor = Color3.fromRGB(255, 255, 255),
+    ElementColor = Color3.fromRGB(32, 32, 38)
+}
+
+local Tabs = {}
+
+function Tabs:NewTab(tabName)
+    tabName = tabName or "Tab"
+    local tabButton = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+    local page = Instance.new("ScrollingFrame")
+    local pageListing = Instance.new("UIListLayout")
+
+    local function UpdateSize()
+        local cS = pageListing.AbsoluteContentSize
+        tweenService:Create(page, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+            CanvasSize = UDim2.new(0, cS.X, 0, cS.Y)
+        }):Play()
+    end
+
+    page.Name = "Page"
+    page.Parent = Pages
+    page.Active = true
+    page.BackgroundColor3 = themes.Background
+    page.BorderSizePixel = 0
+    page.Position = UDim2.new(0, 0, -0.00371747208, 0)
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.ScrollBarThickness = 5
+    page.Visible = false
+    page.ScrollBarImageColor3 = Color3.fromRGB(themes.SchemeColor.r * 255 - 16, themes.SchemeColor.g * 255 - 15, themes.SchemeColor.b * 255 - 28)
+
+    pageListing.Name = "pageListing"
+    pageListing.Parent = page
+    pageListing.SortOrder = Enum.SortOrder.LayoutOrder
+    pageListing.Padding = UDim.new(0, 5)
+
+    tabButton.Name = tabName .. "TabButton"
+    tabButton.Parent = tabFrames
+    tabButton.BackgroundColor3 = themes.SchemeColor
+    Objects[tabButton] = "SchemeColor"
+    tabButton.Size = UDim2.new(0, 135, 0, 28)
+    tabButton.AutoButtonColor = false
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Text = tabName
+    tabButton.TextColor3 = themes.TextColor
+    Objects[tabButton] = "TextColor3"
+    tabButton.TextSize = 14.000
+    tabButton.BackgroundTransparency = 1
+
+    UICorner.CornerRadius = UDim.new(0, 5)
+    UICorner.Parent = tabButton
+
+    UpdateSize()
+    page.ChildAdded:Connect(UpdateSize)
+    page.ChildRemoved:Connect(UpdateSize)
+
+    tabButton.MouseButton1Click:Connect(function()
+        UpdateSize()
+        for i, v in next, Pages:GetChildren() do
+            v.Visible = false
+        end
+        page.Visible = true
+        for i, v in next, tabFrames:GetChildren() do
+                           if v:IsA("TextButton") then
+                    Utility:TweenObject(v, {BackgroundTransparency = 1}, 0.2)
+                end
+            end
+            Utility:TweenObject(tabButton, {BackgroundTransparency = 0}, 0.2)
+        end
+    end)
+
+    local Sections = {}
+    local focusing = false
+    local viewDe = false
+
+    coroutine.wrap(function()
+        while wait() do
+            page.BackgroundColor3 = themes.Background
+            page.ScrollBarImageColor3 = Color3.fromRGB(themes.SchemeColor.r * 255 - 16, themes.SchemeColor.g * 255 - 15, themes.SchemeColor.b * 255 - 28)
+            tabButton.TextColor3 = themes.TextColor
+            tabButton.BackgroundColor3 = themes.SchemeColor
+        end
+    end)()
+
+    function Sections:NewSection(secName, hidden)
+        secName = secName or "Section"
+        local sectionFunctions = {}
+        local sectionFrame = Instance.new("Frame")
+        local sectionList = Instance.new("UIListLayout")
+        local sectionHead = Instance.new("Frame")
+        local sHeadCorner = Instance.new("UICorner")
+        local sectionName = Instance.new("TextLabel")
+        local sectionInners = Instance.new("Frame")
+        local sectionElListing = Instance.new("UIListLayout")
+
+        sectionFrame.Name = "sectionFrame"
+        sectionFrame.Parent = page
+        sectionFrame.BackgroundColor3 = themes.Background
+        sectionFrame.BorderSizePixel = 0
+
+        sectionList.Name = "sectionList"
+        sectionList.Parent = sectionFrame
+        sectionList.SortOrder = Enum.SortOrder.LayoutOrder
+        sectionList.Padding = UDim.new(0, 5)
+
+        sectionHead.Name = "sectionHead"
+        sectionHead.Parent = sectionFrame
+        sectionHead.BackgroundColor3 = themes.SchemeColor
+        sectionHead.Size = UDim2.new(0, 352, 0, 33)
+
+        sHeadCorner.CornerRadius = UDim.new(0, 4)
+        sHeadCorner.Parent = sectionHead
+
+        sectionName.Name = "sectionName"
+        sectionName.Parent = sectionHead
+        sectionName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        sectionName.BackgroundTransparency = 1.000
+        sectionName.Size = UDim2.new(1, 0, 1, 0)
+        sectionName.Font = Enum.Font.Gotham
+        sectionName.Text = secName
+        sectionName.TextColor3 = themes.TextColor
+        sectionName.TextSize = 14.000
+
+        sectionInners.Name = "sectionInners"
+        sectionInners.Parent = sectionFrame
+        sectionInners.BackgroundColor3 = themes.Background
+        sectionInners.Size = UDim2.new(1, 0, 0, 0)
+
+        sectionElListing.Name = "sectionElListing"
+        sectionElListing.Parent = sectionInners
+        sectionElListing.SortOrder = Enum.SortOrder.LayoutOrder
+        sectionElListing.Padding = UDim.new(0, 5)
+
+        if hidden then
+            sectionHead.Visible = false
+        else
+            sectionHead.Visible = true
+        end
+
+        coroutine.wrap(function()
+            while wait() do
+                sectionFrame.BackgroundColor3 = themes.Background
+                sectionHead.BackgroundColor3 = themes.SchemeColor
+                sectionName.TextColor3 = themes.TextColor
+            end
+        end)()
+
+        function sectionFunctions:NewButton(bname, tipInfo, callback)
+            tipInfo = tipInfo or "Tip: Clicking this does nothing!"
+            bname = bname or "Click Me!"
+            callback = callback or function() end
+
+            local buttonElement = Instance.new("TextButton")
+            local UICorner = Instance.new("UICorner")
+            local btnInfo = Instance.new("TextLabel")
+            local viewInfo = Instance.new("ImageButton")
+
+            buttonElement.Name = bname
+            buttonElement.Parent = sectionInners
+            buttonElement.BackgroundColor3 = themes.ElementColor
+            buttonElement.Size = UDim2.new(0, 352, 0, 33)
+            buttonElement.AutoButtonColor = false
+            buttonElement.Font = Enum.Font.SourceSans
+            buttonElement.Text = ""
+            buttonElement.TextColor3 = Color3.fromRGB(0, 0, 0)
+            buttonElement.TextSize = 14.000
+
+            UICorner.CornerRadius = UDim.new(0, 4)
+            UICorner.Parent = buttonElement
+
+            viewInfo.Name = "viewInfo"
+            viewInfo.Parent = buttonElement
+                        viewInfo.BackgroundTransparency = 1.000
+            viewInfo.Position = UDim2.new(0.930000007, 0, 0.151999995, 0)
+            viewInfo.Size = UDim2.new(0, 23, 0, 23)
+            viewInfo.Image = "rbxassetid://3926305904"
+            viewInfo.ImageColor3 = themes.SchemeColor
+            viewInfo.ImageRectOffset = Vector2.new(764, 764)
+            viewInfo.ImageRectSize = Vector2.new(36, 36)
+
+            btnInfo.Name = "btnInfo"
+            btnInfo.Parent = buttonElement
+            btnInfo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            btnInfo.BackgroundTransparency = 1.000
+            btnInfo.Size = UDim2.new(1, 0, 1, 0)
+            btnInfo.Font = Enum.Font.Gotham
+            btnInfo.Text = "  " .. bname
+            btnInfo.TextColor3 = themes.TextColor
+            btnInfo.TextSize = 14.000
+
+            buttonElement.MouseButton1Click:Connect(function()
+                callback()
+            end)
+
+            viewInfo.MouseButton1Click:Connect(function()
+                -- Show more info about the button
+                print(tipInfo) -- You can replace this with your own tooltip display logic
+            end)
+
+            coroutine.wrap(function()
+                while wait() do
+                    buttonElement.BackgroundColor3 = themes.ElementColor
+                    btnInfo.TextColor3 = themes.TextColor
+                    viewInfo.ImageColor3 = themes.SchemeColor
+                end
+            end)()
+        end
+
+        function sectionFunctions:NewLabel(labelText)
+            local label = Instance.new("TextLabel")
+            label.Name = "label"
+            label.Parent = sectionInners
+            label.BackgroundColor3 = themes.Background
+            label.Size = UDim2.new(0, 352, 0, 33)
+            label.Font = Enum.Font.Gotham
+            label.Text = "  " .. labelText
+            label.TextColor3 = themes.TextColor
+            label.TextSize = 14.000
+
+            local UICorner = Instance.new("UICorner")
+            UICorner.CornerRadius = UDim.new(0, 4)
+            UICorner.Parent = label
+
+            coroutine.wrap(function()
+                while wait() do
+                    label.BackgroundColor3 = themes.Background
+                    label.TextColor3 = themes.TextColor
+                end
+            end)()
+        end
+
+        return sectionFunctions
+    end
+
+    return Tabs
+end
+
+local CustomUI = {}
+
+local tweenService = game:GetService("TweenService")
+local userInputService = game:GetService("User InputService")
+local runService = game:GetService("RunService")
+
+local Utility = {}
+local Objects = {}
+
+function CustomUI:DraggingEnabled(frame, parent)
+    parent = parent or frame
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            mousePos = input.Position
+            framePos = parent.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+
+    userInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - mousePos
+            parent.Position = UDim2.new(framePos.X.Scale, framePos.X.Offset + delta.X, framePos.Y.Scale, framePos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+function Utility:TweenObject(obj, properties, duration, ...)
+    tweenService:Create(obj, TweenInfo.new(duration, ...), properties):Play()
+end
+
+local themes = {
+    SchemeColor = Color3.fromRGB(74, 99, 135),
+    Background = Color3.fromRGB(36, 37, 43),
+    Header = Color3.fromRGB(28, 29, 34),
+    TextColor = Color3.fromRGB(255, 255, 255),
+    ElementColor = Color3.fromRGB(32, 32, 38)
+}
+
+local Tabs = {}
+
+function Tabs:NewTab(tabName)
+    tabName = tabName or "Tab"
+    local tabButton = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+    local page = Instance.new("ScrollingFrame")
+    local pageListing = Instance.new("UIListLayout")
+
+    local function UpdateSize()
+        local cS = pageListing.AbsoluteContentSize
+        tweenService:Create(page, TweenInfo.new(0.15, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
+            CanvasSize = UDim2.new(0, cS.X, 0, cS.Y)
+        }):Play()
+    end
+
+    page.Name = "Page"
+    page.Parent = Pages
+    page.Active = true
+    page.BackgroundColor3 = themes.Background
+    page.BorderSizePixel = 0
+    page.Position = UDim2.new(0, 0, -0.00371747208, 0)
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.ScrollBarThickness = 5
+    page.Visible = false
+    page.ScrollBarImageColor3 = Color3.fromRGB(themes.SchemeColor.r * 255 - 16, themes.SchemeColor.g * 255 - 15, themes.SchemeColor.b * 255 - 28)
+
+    pageListing.Name = "pageListing"
+    pageListing.Parent = page
+    pageListing.SortOrder = Enum.SortOrder.LayoutOrder
+    pageListing.Padding = UDim.new(0, 5)
+
+    tabButton.Name = tabName .. "TabButton"
+    tabButton.Parent = tabFrames
+    tabButton.BackgroundColor3 = themes.SchemeColor
+    Objects[tabButton] = "SchemeColor"
+    tabButton.Size = UDim2.new(0, 135, 0, 28)
+    tabButton.AutoButtonColor = false
+    tabButton.Font = Enum.Font.Gotham
+    tabButton.Text = tabName
+    tabButton.TextColor3 = themes.TextColor
+    Objects[tabButton] = "TextColor3"
+    tabButton.TextSize = 14.000
+    tabButton.BackgroundTransparency = 1
+
+    UICorner.CornerRadius = UDim.new(0, 5)
+    UICorner.Parent = tabButton
+
+    UpdateSize()
+    page.ChildAdded:Connect(UpdateSize)
+    page.ChildRemoved:Connect(UpdateSize)
+
+    tabButton.MouseButton1Click:Connect(function()
+        UpdateSize()
+        for i, v in next, Pages:GetChildren() do
+            v.Visible = false
+        end
+        page.Visible = true
+        for i, v in next, tabFrames:GetChildren() do
+            if v:IsA("TextButton")
+
+return CustomUI
+               
